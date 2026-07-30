@@ -1,0 +1,7 @@
+# Local environment overrides (contains host-specific/secret values)
+docker/.env
+
+# Persisted container data
+docker/volumes/technitium/config/
+docker/volumes/technitium/logs/
+docker/volumes/unbound/blocklists/

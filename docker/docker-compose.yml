@@ -1,0 +1,81 @@
+###########################################
+# Hygge Stack: (T)echnitium, (U)nbound, (D)ragonflyDB
+###########################################
+# Docker Compose file sets up a DNS stack with the following services:
+#   - Technitium DNS Server for network-wide ad blocking and DNS management.
+#   - Unbound as a recursive DNS resolver for enhanced privacy and security.
+#   - DragonflyDB as a caching layer to improve DNS query performance.
+#
+# Network segmentation:
+#   - dns-frontend: technitium <-> unbound
+#   - cache-backend: unbound <-> dragonfly
+#   Technitium is intentionally NOT on cache-backend, so it cannot reach
+#   DragonflyDB directly (defense in depth / least privilege).
+###########################################
+services:
+  technitium:
+    container_name: hygge-technitium
+    hostname: technitium
+    image: docker.io/technitium/dns-server:latest
+    restart: unless-stopped
+    ports:
+      # Uses DNS_SERVER_WEB_SERVICE_HTTP_PORT from .env for both sides, so
+      # changing that variable is enough to move the web console to a
+      # different port (defaults to 5380 if unset).
+      - "${DNS_SERVER_WEB_SERVICE_HTTP_PORT:-5380}:${DNS_SERVER_WEB_SERVICE_HTTP_PORT:-5380}/tcp"
+      - "53:53/tcp"     # DNS service
+      - "53:53/udp"     # DNS service
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    # All DNS_SERVER_* variables are passed through as-is from .env.
+    # Uncomment any of them in .env to activate (see .env.example for the
+    # full documented list). Empty/commented-out variables are ignored by
+    # Technitium's entrypoint. DNS_SERVER_FORWARDERS is set dynamically by
+    # ./scripts/technitium-entrypoint.sh instead, since it needs Unbound's
+    # current IP address (see that script for why).
+    env_file:
+      - .env
+    volumes:
+      - ./volumes/technitium/config:/etc/dns
+      - ./volumes/technitium/logs:/var/log/technitium/dns
+      - ./scripts/technitium-entrypoint.sh:/entrypoint.sh:ro
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+    networks:
+      - dns-frontend
+    depends_on:
+      - unbound
+
+  unbound:
+    container_name: hygge-unbound
+    image: klutchell/unbound:latest
+    restart: unless-stopped
+    volumes:
+      - ./volumes/unbound:/etc/unbound # location of unbound.conf and unbound.conf.d for additional .conf files
+      - ./volumes/unbound/blocklists:/opt/unbound/blocklists # Volume for custom blocklists
+      - unbound-run:/run/unbound # Volume for /run so Unbound can create its control socket. Used in remote control.
+    networks:
+      - dns-frontend
+      - cache-backend
+    depends_on:
+      - dragonfly
+
+  dragonfly:
+    container_name: hygge-dragonfly
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    restart: unless-stopped
+    ulimits:
+      memlock: -1
+    networks:
+      - cache-backend
+    volumes:
+      - dragonfly-data:/data # Named volume to persist DragonflyDB data
+
+networks:
+  dns-frontend:
+    driver: bridge # technitium <-> unbound communication only
+  cache-backend:
+    driver: bridge # unbound <-> dragonfly communication only, isolated from technitium
+
+volumes:
+  unbound-run: # Named volume for /run so Unbound can create its control socket. Used in remote control.
+  dragonfly-data: # Named volume for DragonflyDB persistence
