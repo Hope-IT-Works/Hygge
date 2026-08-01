@@ -23,7 +23,10 @@ UNBOUND_PORT="${UNBOUND_PORT:-5335}"
 echo "[technitium-entrypoint] Resolving ${UNBOUND_HOST}..."
 UNBOUND_IP=""
 for _ in $(seq 1 30); do
-  UNBOUND_IP="$(getent hosts "${UNBOUND_HOST}" | awk '{ print $1 }' | head -n1 || true)"
+  # Force IPv4 lookup: "getent hosts" can return an AAAA record first if the
+  # network has IPv6 assigned, but Unbound only listens on IPv4 (do-ip6: no),
+  # so an IPv6 forwarder address would be unreachable.
+  UNBOUND_IP="$(getent ahostsv4 "${UNBOUND_HOST}" | awk '{ print $1 }' | head -n1 || true)"
   if [ -n "${UNBOUND_IP}" ]; then
     break
   fi
