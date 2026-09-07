@@ -57,7 +57,8 @@ services:
       - dns-frontend
       - cache-backend
     depends_on:
-      - dragonfly
+      dragonfly:
+        condition: service_healthy
 
   dragonfly:
     container_name: hygge-dragonfly
@@ -69,6 +70,12 @@ services:
       - cache-backend
     volumes:
       - dragonfly-data:/data # Named volume to persist DragonflyDB data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "127.0.0.1", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
 networks:
   dns-frontend:
