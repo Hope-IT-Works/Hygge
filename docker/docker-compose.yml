@@ -72,7 +72,13 @@ services:
       dragonfly:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "drill -p 53 @127.0.0.1 . NS || exit 1"]
+      # NOTE: The klutchell/unbound image contains neither a shell (/bin/sh)
+      # nor drill, so a CMD-SHELL based check (e.g. "drill ... || exit 1")
+      # will ALWAYS fail regardless of whether unbound is actually healthy.
+      # Use the plain CMD (exec) form with unbound-control, which ships
+      # with unbound itself and talks to the remote-control socket backed
+      # by the unbound-run volume.
+      test: ["CMD", "unbound-control", "status"]
       interval: 10s
       timeout: 5s
       retries: 5
