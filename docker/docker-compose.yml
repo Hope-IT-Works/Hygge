@@ -19,10 +19,14 @@ services:
     image: docker.io/technitium/dns-server:latest
     restart: unless-stopped
     ports:
-      # Uses DNS_SERVER_WEB_SERVICE_HTTP_PORT from .env for both sides, so
-      # changing that variable is enough to move the web console to a
-      # different port (defaults to 5380 if unset).
-      - "${DNS_SERVER_WEB_SERVICE_HTTP_PORT:-5380}:${DNS_SERVER_WEB_SERVICE_HTTP_PORT:-5380}/tcp"
+      # Uses DNS_SERVER_WEB_SERVICE_HTTP_PORT from .env for the container
+      # side, so changing that variable is enough to move the web console
+      # to a different port inside the container (defaults to 5380 if
+      # unset). The host-side bind address is controlled independently via
+      # WEB_SERVICE_HOST_BINDING, e.g. set it to 127.0.0.1 to only expose
+      # the web console locally when running Technitium behind a reverse
+      # proxy on the same host.
+      - "${WEB_SERVICE_HOST_BINDING:-0.0.0.0}:${DNS_SERVER_WEB_SERVICE_HTTP_PORT:-5380}:${DNS_SERVER_WEB_SERVICE_HTTP_PORT:-5380}/tcp"
       - "53:53/tcp"     # DNS service
       - "53:53/udp"     # DNS service
     entrypoint: ["/bin/bash", "/entrypoint.sh"]
