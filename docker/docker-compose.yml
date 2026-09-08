@@ -34,8 +34,9 @@ services:
     # Uncomment any of them in .env to activate (see .env.example for the
     # full documented list). Empty/commented-out variables are ignored by
     # Technitium's entrypoint. DNS_SERVER_FORWARDERS is set dynamically by
-    # ./scripts/technitium-entrypoint.sh instead, since it needs Unbound's
-    # current IP address (see that script for why).
+    # ./scripts/technitium-entrypoint.sh for first boot, and the script also
+    # reconciles the configured forwarder via Technitium's API on every start
+    # so Unbound IP changes are picked up.
     env_file:
       - .env
     volumes:
