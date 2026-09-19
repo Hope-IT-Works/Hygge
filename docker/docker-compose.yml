@@ -91,6 +91,7 @@ services:
     environment:
       DFLY_cache_mode: true
       DFLY_maxmemory: "1G"
+      DFLY_proactor_threads: 4
     ulimits:
       memlock: -1
     networks:
