@@ -88,6 +88,9 @@ services:
     container_name: hygge-dragonfly
     image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
     restart: unless-stopped
+    environment:
+      DFLY_cache_mode: true
+      DFLY_maxmemory: "1G"
     ulimits:
       memlock: -1
     networks:
