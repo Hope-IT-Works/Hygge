@@ -110,8 +110,10 @@ services:
 networks:
   dns-frontend:
     driver: bridge # technitium <-> unbound communication only
+    enable_ipv6: false # unbound only listens on IPv4 (do-ip6: no); IPv6 addrs here just cause connection-refused fallback delays
   cache-backend:
     driver: bridge # unbound <-> dragonfly communication only, isolated from technitium
+    enable_ipv6: false # avoids unbound's cachedb/redis client possibly hitting an unreachable IPv6 address for the "dragonfly" hostname
 
 volumes:
   unbound-run: # Named volume for /run so Unbound can create its control socket. Used in remote control.
