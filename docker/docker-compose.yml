@@ -60,9 +60,8 @@ services:
   unbound:
     container_name: hygge-unbound
     image: klutchell/unbound:latest
-    capabilities:
-      add:
-        - NET_ADMIN
+    cap_add:
+      - NET_ADMIN
     restart: unless-stopped
     volumes:
       - ./volumes/unbound:/etc/unbound # location of unbound.conf and unbound.conf.d for additional .conf files
